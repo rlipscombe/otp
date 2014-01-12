@@ -523,13 +523,13 @@ next_state_connection(StateName, #state{send_queue = Queue0,
 					negotiated_version = Version,
 					socket = Socket,
 					transport_cb = Transport,
-					connection_states = ConnectionStates0
-				       } = State) ->     
+					connection_states = ConnectionStates0,
+			                ssl_options = #ssl_options{max_plain_text_length = MaxPlainTextLength}} = State) ->     
     %% Send queued up data that was queued while renegotiating
     case queue:out(Queue0) of
 	{{value, {From, Data}}, Queue} ->
 	    {Msgs, ConnectionStates} = 
-		ssl_record:encode_data(Data, Version, ConnectionStates0),
+		ssl_record:encode_data(Data, Version, MaxPlainTextLength, ConnectionStates0),
 	    Result = Transport:send(Socket, Msgs),
 	    gen_fsm:reply(From, Result),
 	    next_state_connection(StateName,
@@ -759,7 +759,7 @@ write_application_data(Data0, From,
 			      connection_states = ConnectionStates0,
 			      send_queue = SendQueue,
 			      socket_options = SockOpts,
-			      ssl_options = #ssl_options{renegotiate_at = RenegotiateAt}} = State) ->
+			      ssl_options = #ssl_options{renegotiate_at = RenegotiateAt, max_plain_text_length = MaxPlainTextLength}} = State) ->
     Data = encode_packet(Data0, SockOpts),
     
     case time_to_renegotiate(Data, ConnectionStates0, RenegotiateAt) of
@@ -767,7 +767,7 @@ write_application_data(Data0, From,
 	    renegotiate(State#state{send_queue = queue:in_r({From, Data}, SendQueue),
 				    renegotiation = {true, internal}});
 	false ->
-	    {Msgs, ConnectionStates} = ssl_record:encode_data(Data, Version, ConnectionStates0),
+	    {Msgs, ConnectionStates} = ssl_record:encode_data(Data, Version, MaxPlainTextLength, ConnectionStates0),
 	    Result = Transport:send(Socket, Msgs),
 	    {reply, Result,
 	     connection, State#state{connection_states = ConnectionStates}, get_timeout(State)}

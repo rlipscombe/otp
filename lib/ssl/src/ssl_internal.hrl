@@ -39,6 +39,7 @@
 -type issuer()            :: tuple().
 -type serialnumber()      :: integer().
 -type cert_key()          :: {reference(), integer(), issuer()}.
+-type max_plain_text_length() :: 512..16384.
 
 %% basic binary constructors
 -define(BOOLEAN(X),  X:8/unsigned-big-integer).
@@ -104,6 +105,7 @@
 	  reuse_sessions       :: boolean(),
 	  renegotiate_at,
 	  secure_renegotiate,
+          max_plain_text_length = 16384 :: max_plain_text_length(),
 	  debug,
 	  %% undefined if not hibernating, or number of ms of
 	  %% inactivity after which ssl_connection will go into

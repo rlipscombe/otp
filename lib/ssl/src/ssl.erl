@@ -627,6 +627,7 @@ handle_options(Opts0, _Role) ->
       psk_identity = handle_option(psk_identity, Opts, undefined),
       srp_identity = handle_option(srp_identity, Opts, undefined),
       ciphers    = handle_option(ciphers, Opts, []),
+      max_plain_text_length = handle_option(max_plain_text_length, Opts, ?MAX_PLAIN_TEXT_LENGTH),
       %% Server side option
       reuse_session = handle_option(reuse_session, Opts, ReuseSessionFun),
       reuse_sessions = handle_option(reuse_sessions, Opts, true),
@@ -647,7 +648,7 @@ handle_options(Opts0, _Role) ->
 		  fail_if_no_peer_cert, verify_client_once,
 		  depth, cert, certfile, key, keyfile,
 		  password, cacerts, cacertfile, dh, dhfile,
-		  user_lookup_fun, psk_identity, srp_identity, ciphers,
+		  user_lookup_fun, psk_identity, srp_identity, ciphers, max_plain_text_length,
 		  reuse_session, reuse_sessions, ssl_imp,
 		  cb_info, renegotiate_at, secure_renegotiate, hibernate_after,
 		  erl_dist, next_protocols_advertised,
@@ -766,6 +767,10 @@ validate_option(srp_identity, undefined) ->
 validate_option(srp_identity, {Username, Password})
   when is_list(Username), is_list(Password), Username =/= "", length(Username) =< 255 ->
     {list_to_binary(Username), list_to_binary(Password)};
+
+validate_option(max_plain_text_length, Value)
+  when Value >= 512, Value =< ?MAX_PLAIN_TEXT_LENGTH ->
+    Value;
 
 validate_option(ciphers, Value)  when is_list(Value) ->
     Version = tls_record:highest_protocol_version([]),

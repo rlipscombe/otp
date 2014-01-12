@@ -42,7 +42,7 @@
 
 %% Encoding records
 -export([encode_handshake/3, encode_alert_record/3,
-	 encode_change_cipher_spec/2, encode_data/3]).
+	 encode_change_cipher_spec/2, encode_data/4]).
 
 %% Compression
 -export([compress/3, uncompress/3, compressions/0]).
@@ -328,17 +328,17 @@ encode_change_cipher_spec(Version, ConnectionStates) ->
     encode_plain_text(?CHANGE_CIPHER_SPEC, Version, <<1:8>>, ConnectionStates).
 
 %%--------------------------------------------------------------------
--spec encode_data(binary(), tls_version(), #connection_states{}) ->
+-spec encode_data(binary(), tls_version(), max_plain_text_length(), #connection_states{}) ->
 			 {iolist(), #connection_states{}}.
 %%
 %% Description: Encodes data to send on the ssl-socket.
 %%--------------------------------------------------------------------
-encode_data(Frag, Version,
+encode_data(Frag, Version, MaxPlainTextLength,
 	    #connection_states{current_write = #connection_state{
 				 security_parameters =
 				     #security_parameters{bulk_cipher_algorithm = BCA}}} =
 		ConnectionStates) ->
-    Data = split_bin(Frag, ?MAX_PLAIN_TEXT_LENGTH, Version, BCA),
+    Data = split_bin(Frag, MaxPlainTextLength, Version, BCA),
     encode_iolist(?APPLICATION_DATA, Data, Version, ConnectionStates).
 
 uncompress(?NULL, Data, CS) ->
