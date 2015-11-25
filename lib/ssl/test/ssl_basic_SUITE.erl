@@ -97,6 +97,7 @@ options_tests() ->
      misc_ssl_options,
      ssl_options_not_proplist,
      raw_ssl_option,
+     raw_ssl_options,
      socket_options,
      invalid_inet_get_option,
      invalid_inet_get_option_not_list,
@@ -312,7 +313,8 @@ init_per_testcase(clear_pem_cache, Config) ->
     ct:log("TLS/SSL version ~p~n ", [tls_record:supported_protocol_versions()]),
     ct:timetrap({seconds, 20}),
     Config;
-init_per_testcase(raw_ssl_option, Config) ->
+init_per_testcase(TestCase, Config) when TestCase == raw_ssl_option;
+                                         TestCase == raw_ssl_options ->
     ct:timetrap({seconds, 5}),
     case os:type() of
         {unix,linux} ->
@@ -1159,6 +1161,27 @@ raw_ssl_option(Config) when is_list(Config) ->
     % Per http://www.erlang.org/doc/man/inet.html#getopts-2, we have to specify
     % exactly which raw option we want, and the size of the buffer.
     {ok, [{raw, IpProtoTcp, TcpKeepIdle, <<KeepAliveTimeSecs:32/native>>}]} = ssl:getopts(LSocket, [{raw, IpProtoTcp, TcpKeepIdle, 4}]).
+
+raw_ssl_options() ->
+    [{doc,"Ensure that multiple 'raw' options are passed to ssl:listen correctly."}].
+
+raw_ssl_options(Config) when is_list(Config) ->
+    % 'raw' option values are platform-specific; these are the Linux values:
+    IpProtoTcp = 6,
+    % Use TCP_KEEPIDLE, because (e.g.) TCP_MAXSEG can't be read back reliably.
+    TcpKeepIdle = 4, TcpKeepIntvl = 5, TcpKeepCnt = 6,
+    KeepAliveTimeSecs = 55, KeepAliveIntvlSecs = 17, KeepAliveCnt = 3,
+
+    LOptions = [
+                {raw, IpProtoTcp, TcpKeepIdle, <<KeepAliveTimeSecs:32/native>>},
+                {raw, IpProtoTcp, TcpKeepIntvl, <<KeepAliveIntvlSecs:32/native>>},
+                {raw, IpProtoTcp, TcpKeepCnt, <<KeepAliveCnt:32/native>>}],
+    {ok, LSocket} = ssl:listen(0, LOptions),
+    lists:foreach(fun({raw, Proto, OptNum, ExpectedValue}) ->
+                          % Per http://www.erlang.org/doc/man/inet.html#getopts-2, we have to specify
+                          % exactly which raw option we want, and the size of the buffer.
+                          {ok, [{raw, Proto, OptNum, ExpectedValue}]} = ssl:getopts(LSocket, [{raw, Proto, OptNum, 4}])
+                  end, LOptions).
 
 
 %%--------------------------------------------------------------------
