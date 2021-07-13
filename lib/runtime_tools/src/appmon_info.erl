@@ -714,8 +714,12 @@ format(P) when is_pid(P) ->
 		case process_info(P, dictionary) of
 			{dictionary, D} ->
 				case proplists:get_value('$process_label', D) of
-					undefined -> pid_to_list(P);
-					Label -> io_lib:format("~tp ~tp", [Label, P])
+					undefined ->
+						pid_to_list(P);
+					Label when is_list(Label); is_binary(Label) ->
+						io_lib:format("~ts ~tp", [Label, P]);
+					Label ->
+						io_lib:format("~tp ~tp", [Label, P])
 				end;
 			_ -> pid_to_list(P)
 		end
